@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 public static class ListToGeoSphare
 {
-    public static List<Vector2> ToGeoSphare(this List<Vector2> list)
+    public static List<Node> ToGeoSphare(this List<Node> list)
     {
         float offset = 0;
         if(list.Count %2 == 0)
@@ -12,7 +12,7 @@ public static class ListToGeoSphare
         }
         for (int i = 0; i < list.Count; i++)
         {
-            list[i] = AngleToPos((float)360 / list.Count * i + offset+90);
+            list[i].pos = AngleToPos((float)360 / list.Count * i + offset+90);
         }
         return list;
     }

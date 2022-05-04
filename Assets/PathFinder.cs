@@ -14,55 +14,152 @@ public class PathFinder : MonoBehaviour
         navObstacles = obj.ToList();
     }
 
-    public void Update()
+    //수정
+    //4각형 이상에서의 이동
+    //도형의 점이 다른 도형에 겹쳐져 있을경우
+    public void FixedUpdate()
     {
+        ResetNode();
         Vector3[] path = FindPath(start.position, end.position);
         if (path == null) return;
 
-        for (int i = 0; i < path.Length-1; i++)
+        for (int i = 0; i < path.Length - 1; i++)
         {
-            Debug.DrawLine(path[i], path[i + 1], Color.green);
+            Debug.DrawLine(path[i], path[i + 1], Color.blue);
+        }
+
+
+    }
+    private void OnDrawGizmos()
+    {
+
+        for (int i = 0; i < navObstacles.Count; i++)
+        {
+            for (int k = 0; k < navObstacles[i].nodeCount; k++)
+            {
+                Handles.Label(navObstacles[i].Nodes[k].pos.ToVector3(), navObstacles[i].Nodes[k].dist.ToString() + "\n" + navObstacles[i].Nodes[k].pos + "\n" + navObstacles[i].Nodes[k].privewNode?.pos);
+            }
         }
     }
 
+
+
+    private void ResetNode()
+    {
+        for (int i = 0; i < navObstacles.Count; i++)
+        {
+            for (int k = 0; k < navObstacles[i].nodeCount; k++)
+            {
+                navObstacles[i].Nodes[k].privewNode = null;
+            }
+        }
+    }
     public Vector3[] FindPath(Vector3 _start, Vector3 _end)
     {
         Vector3[] tr;
         tr = new Vector3[2];
         tr[0] = _start;
         tr[1] = _end;
-        //직선이동이 가능한 경우 즉시 반환
-        if (CanMove(_start, _end)) return tr;
 
-        //길찾기 시작
+        Node start = new Node(_start.ToVector2());
+        Node end = new Node(_end.ToVector2());
 
+        FindPath(start, end, -1, -1);
+        if (end.privewNode == null) return null;
 
+        List<Vector3> path = new List<Vector3>();
 
-
-        return null;
+        while (true)
+        {
+            path.Insert(0, end.pos.ToVector3());
+            if (end.privewNode == null) return path.ToArray();
+            end = end.privewNode;
+        }
     }
 
-    bool CanMove(Vector3 _start, Vector3 _end)
+    void FindPath(Node node, Node Target, int navObstaclesIndex, int nodeIndex)
     {
-        Vector2 s = new Vector2(_start.x, _start.z);
-        Vector2 e = new Vector2(_end.x, _end.z);
+        Debug.LogFormat("{0} / {1} \n                    {2} / {3} \n {4}", node.pos, node.dist, node.privewNode?.pos, node.privewNode?.dist, NodeDist(node, Target));
+        //도착점으로 이동가능한경우 return
+        if (CanMove(node.pos, Target.pos))
+        {
+            if (Target.dist > NodeDist(node, Target) || Target.dist == -1)
+            {
+                Target.privewNode = node;
+            }
+            return;
+        }
+
+        //길찾기 시작
+        for (int i = 0; i < navObstacles.Count; i++)
+        {
+            //같은 도형내 이동일 경우 좌우 Node로만 이동 가능
+            if(i == navObstaclesIndex)
+            {
+                var navobs = navObstacles[i];
+                int nextindex = navobs.nodeCount -1 == nodeIndex? 0 : nodeIndex+1;
+
+                var next = navObstacles[i].Nodes[nextindex];
+                if (CanMove(node.pos, next.pos) && (next.dist >= NodeDist(node, next) || next.dist == -1))
+                {
+                    if (Target.dist == -1 || Target.dist > NodeDist(node, next))
+                    {
+                        next.privewNode = node;
+                        FindPath(next, Target, i, nextindex);
+                    }
+                }
+
+                nextindex = nodeIndex == 0 ? navobs.nodeCount - 1 : nodeIndex - 1;
+                next = navObstacles[i].Nodes[nextindex];
+                if (CanMove(node.pos, next.pos) && (next.dist >= NodeDist(node, next) || next.dist == -1))
+                {
+                    if (Target.dist == -1 || Target.dist > NodeDist(node, next))
+                    {
+                        next.privewNode = node;
+                        FindPath(next, Target, i, nextindex);
+                    }
+                }
+            }
+            else
+            {
+                for (int j = 0; j < navObstacles[i].nodeCount; j++)
+                {
+                    Node next = navObstacles[i].Nodes[j];
+                    if (CanMove(node.pos, next.pos) && (next.dist >= NodeDist(node, next) || next.dist == -1))
+                    {
+                        if (Target.dist == -1 || Target.dist > NodeDist(node, next))
+                        {
+                            next.privewNode = node;
+                            FindPath(next, Target, i, j);
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bool CanMove(Vector2 _start, Vector2 _end)
+    {
         for (int i = 0; i < navObstacles.Count; i++)
         {
             NavObstacle nav = navObstacles[i];
-            for (int j = 0; j < nav.nodeCount-1; j++)
+            for (int j = 0; j < nav.nodeCount - 1; j++)
             {
-                if (LineCollision(s, e, nav.GetNode(j).ToVector2(), nav.GetNode(j+1).ToVector2())) return false;
+                if (LineCollision(_start, _end, nav.GetGlobalNode(j).pos, nav.GetGlobalNode(j + 1).pos)) return false;
             }
-            if (LineCollision(s, e, nav.GetNode(nav.nodeCount-1).ToVector2(), nav.GetNode(0).ToVector2())) return false;
+            if (LineCollision(_start, _end, nav.GetGlobalNode(nav.nodeCount - 1).pos, nav.GetGlobalNode(0).pos)) return false;
         }
         return true;
     }
-
+    float NodeDist(Node p1, Node p2)
+    {
+        return p1.dist + Vector2.Distance(p1.pos, p2.pos);
+    }
     private bool LineCollision(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
     {
-        Debug.DrawLine(new Vector3(p1.x, 0, p1.y), new Vector3(p2.x, 0, p2.y));
-        Debug.DrawLine(new Vector3(p1.x, 0, p1.y), new Vector3(p3.x, 0, p3.y));
-
+        Debug.DrawLine(new Vector3(p1.x, 0, p1.y), new Vector3(p2.x, 0, p2.y), Color.grey);
+        Debug.DrawLine(new Vector3(p3.x, 1, p3.y), new Vector3(p4.x, 1, p4.y), Color.red);
         if (ccw(p1, p3, p4) * ccw(p2, p3, p4) >= 0) return false;
         if (ccw(p3, p1, p2) * ccw(p4, p1, p2) >= 0) return false;
 
@@ -95,9 +192,18 @@ public class PathFinder : MonoBehaviour
         }
     }
 }
-class Node
+[System.Serializable]
+public class Node
 {
-    Node privewNode;
-    Vector2 pos;
-    public float dist => privewNode == null? 0:privewNode.dist + Vector2.Distance(pos, privewNode.pos);
+    public Node()
+    {
+
+    }
+    public Node(Vector2 pos)
+    {
+        this.pos = pos;
+    }
+    public Node privewNode;
+    public Vector2 pos;
+    public float dist => privewNode == null ? -1 : privewNode.dist + Vector2.Distance(pos, privewNode.pos);
 }

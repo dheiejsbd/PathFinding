@@ -7,4 +7,8 @@ public static class Vector3ToVector2
     {
         return new Vector2(vec.x, vec.z);
     }
+    public static Vector3 ToVector3(this Vector2 vec)
+    {
+        return new Vector3(vec.x,2, vec.y);
+    }
 }
