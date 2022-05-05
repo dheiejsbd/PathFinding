@@ -79,7 +79,6 @@ public class PathFinder : MonoBehaviour
 
     void FindPath(Node node, Node Target, int navObstaclesIndex, int nodeIndex)
     {
-        Debug.LogFormat("{0} / {1} \n                    {2} / {3} \n {4}", node.pos, node.dist, node.privewNode?.pos, node.privewNode?.dist, NodeDist(node, Target));
         //도착점으로 이동가능한경우 return
         if (CanMove(node.pos, Target.pos))
         {
