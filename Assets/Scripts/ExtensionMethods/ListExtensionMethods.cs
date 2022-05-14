@@ -1,7 +1,19 @@
 ﻿using System.Collections.Generic;
+using System;
 using UnityEngine;
 public static class ListExtensionMethods
 {
+
+    public static List<T> Select<T>(this List<T> list, Func<int, bool> func)
+    {
+        List<T> newlist = new List<T>();
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (func(i)) newlist.Add(list[i]);
+        }
+        return newlist;
+    }
+
     public static List<Node> Add(this List<Node> list, Vector2 value)
     {
         for (int i = 0; i < list.Count; i++)
