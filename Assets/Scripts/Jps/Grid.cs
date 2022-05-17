@@ -25,16 +25,16 @@ namespace JPS
             if(Input.GetKeyDown(KeyCode.Space))
             {
                 JPS jps = new JPS();
-                var st = startTr.position.ToVector2();
-                var et = endTr.position.ToVector2();
+                Vector2 offset = new Vector2(gridSize / 2f, gridSize / 2f);
+                var st = startTr.position.ToVector2() + offset;
+                var et = endTr.position.ToVector2() + offset;
 
-                Vector2Int p1 = new Vector2Int((int)st.x / gridSize, (int)st.y / gridSize);
-                Vector2Int p2 = new Vector2Int((int)et.x / gridSize, (int)et.y / gridSize);
+                Vector2Int p1 = new Vector2Int((int)(st.x / gridSize), (int)(st.y / gridSize));
+                Vector2Int p2 = new Vector2Int((int)(et.x / gridSize), (int)(et.y / gridSize));
 
                 var sn = nodes[p1.x + p1.y * gridCount];
                 var en = nodes[p2.x + p2.y * gridCount];
                 jps.FindPath(nodes, sn, en, gridCount);
-
             }
         }
         public void InitializeGrid()

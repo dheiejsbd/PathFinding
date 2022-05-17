@@ -12,16 +12,15 @@ namespace JPS
 
         int mapSize;
         JPSNode startNode, endNode;
-        List<JPSNode> originmapData = new List<JPSNode>();
         List<JPSNode> mapData = new List<JPSNode>();
         List<JPSNode> openNodes = new List<JPSNode>();
 
         public void FindPath(List<JPSNode> mapData, JPSNode startNode, JPSNode endNode, int mapSize)
         {
+            Debug.DrawRay(new Vector3(startNode.pos.x,0, startNode.pos.y), Vector3.up, Color.white, 5);
             openNodes.Clear();
-            originmapData = mapData;
             this.mapSize = mapSize;
-            InitializeMap();
+            this.mapData = mapData;
             startNode.gCost = 0;
             startNode.hCost = ManhattanHeuristic(startNode.pos, endNode.pos);
             this.endNode = endNode;
@@ -63,13 +62,6 @@ namespace JPS
                 currentNode.moveAble = false;
             }
         }
-
-        void InitializeMap()
-        {
-            mapData.Clear();
-            mapData.AddRange(originmapData.ToArray());
-        }
-
 
         #region Move
         bool Right(JPSNode _startNode, bool _moveAble = false)
@@ -299,10 +291,10 @@ namespace JPS
             return isFind;
         }
 
+
         //대각
         void RightUp(JPSNode _startNode)
         {
-
             int x = _startNode.pos.x;
             int y = _startNode.pos.y;
 
@@ -390,17 +382,273 @@ namespace JPS
 
             _startNode.moveAble = true;
         }
-        bool RightDown(JPSNode _startNode)
+        void RightDown(JPSNode _startNode)
         {
-            return true;
+            int x = _startNode.pos.x;
+            int y = _startNode.pos.y;
+
+            JPSNode startNode = _startNode;
+            JPSNode currentNode = startNode;
+
+
+            while (currentNode.moveAble == true)
+            {
+                currentNode.moveAble = false;
+
+                #region 맵 사이즈가 넘어가는지 안 넘어가지는지를 체크
+                if (Comp(x + 1, y - 1) == false)   // 탐색 가능 여부
+                {
+                    break;
+                }
+
+
+
+                currentNode = GetNode(++x, --y); // 다음 노드로 이동
+
+                if (currentNode.moveAble == false)
+                {
+                    break;
+                }
+
+                if (currentNode == this.endNode)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                #endregion
+
+                #region 왼쪽이 막혀 있으면서 왼쪽 아래가 막혀있지 않은 경우
+
+                if (y + 1 < mapSize && x > 0)
+                {
+                    if (GetNode(x - 1, y).moveAble == false) // 왼쪽이 막힘
+                    {
+                        if (GetNode(x - 1, y - 1).moveAble == true) // 왼쪽 아래가 안막힘
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+                #endregion
+
+                #region 위가 막혀 있으면서 오른쪽 위가 안막혔으면
+
+                if (y > 0 && x + 1 < mapSize)
+                {
+                    if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
+                    {
+                        if (GetNode(x + 1, y - 1).moveAble == true) // 오른쪽 위 막혀 있지 않으면
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+
+                #endregion
+
+                if (Right(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                if (Down(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+            }
+
+            _startNode.moveAble = true;
         }
-        bool LeftDown(JPSNode _startNode)
+
+        void LeftDown(JPSNode _startNode)
         {
-            return true;
+            int x = _startNode.pos.x;
+            int y = _startNode.pos.y;
+
+            JPSNode startNode = _startNode;
+            JPSNode currentNode = startNode;
+
+
+            while (currentNode.moveAble == true)
+            {
+                currentNode.moveAble = false;
+
+                #region 맵 사이즈가 넘어가는지 안 넘어가지는지를 체크
+                if (Comp(x - 1, y - 1) == false)   // 탐색 가능 여부
+                {
+                    break;
+                }
+
+
+
+                currentNode = GetNode(--x, --y); // 다음 노드로 이동
+
+                if (currentNode.moveAble == false)
+                {
+                    break;
+                }
+
+                if (currentNode == this.endNode)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                #endregion
+
+                #region 오른쪽이 막혀 있으면서 오른쪽 아래가 막혀있지 않은 경우
+
+                if (y + 1 < mapSize && x > 0)
+                {
+                    if (GetNode(x + 1, y).moveAble == false) // 오른쪽이 막힘
+                    {
+                        if (GetNode(x + 1, y - 1).moveAble == true) // 오른쪽 아래가 안막힘
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+                #endregion
+
+                #region 위가 막혀 있으면서 왼쪽 위가 안막혔으면
+
+                if (y > 0 && x + 1 < mapSize)
+                {
+                    if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
+                    {
+                        if (GetNode(x - 1, y + 1).moveAble == true) // 왼쪽 위 막혀 있지 않으면
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+
+                #endregion
+
+                if (Left(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                if (Down(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+            }
+
+            _startNode.moveAble = true;
         }
-        bool LeftUp(JPSNode _startNode)
+        void LeftUp(JPSNode _startNode)
         {
-            return true;
+            int x = _startNode.pos.x;
+            int y = _startNode.pos.y;
+
+            JPSNode startNode = _startNode;
+            JPSNode currentNode = startNode;
+
+
+            while (currentNode.moveAble == true)
+            {
+                currentNode.moveAble = false;
+
+                #region 맵 사이즈가 넘어가는지 안 넘어가지는지를 체크
+                if (Comp(x - 1, y + 1) == false)   // 탐색 가능 여부
+                {
+                    break;
+                }
+
+
+
+                currentNode = GetNode(--x, ++y); // 다음 노드로 이동
+
+                if (currentNode.moveAble == false)
+                {
+                    break;
+                }
+
+                if (currentNode == this.endNode)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                #endregion
+
+                #region 오른쪽이 막혀 있으면서 오른쪽 위가 막혀있지 않은 경우
+
+                if (y + 1 < mapSize && x > 0)
+                {
+                    if (GetNode(x + 1, y).moveAble == false) // 왼쪽이 막힘
+                    {
+                        if (GetNode(x + 1, y + 1).moveAble == true) // 왼쪽 아래가 안막힘
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+                #endregion
+
+                #region 아래가 막혀 있으면서 왼쪽 아래가 안막혔으면
+
+                if (y > 0 && x + 1 < mapSize)
+                {
+                    if (GetNode(x, y - 1).moveAble == false) // 위가 벽이고
+                    {
+                        if (GetNode(x - 1, y - 1).moveAble == true) // 오른쪽 위 막혀 있지 않으면
+                        {
+                            AddOpenList(currentNode, startNode);
+
+                            break; // 코너 발견하면 바로 종료
+                        }
+                    }
+                }
+
+
+                #endregion
+
+                if (Left(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+
+                if (Up(currentNode, true) == true)
+                {
+                    AddOpenList(currentNode, startNode);
+
+                    break;
+                }
+            }
+
+            _startNode.moveAble = true;
         }
 
 
@@ -425,10 +673,10 @@ namespace JPS
 
         bool Comp(int _x, int _y)
         {
-            if (_x < 0) return false;
-            if (_y < 0) return false;
-            if (_x >= mapSize) return false;
-            if (_y >= mapSize) return false;
+            if (_x <= 0) return false;
+            if (_y <= 0) return false;
+            if (_x >= mapSize-1) return false;
+            if (_y >= mapSize-1) return false;
 
             return true;
         }
