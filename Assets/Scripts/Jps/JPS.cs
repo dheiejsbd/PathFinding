@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 namespace JPS
 {
     public class JPS
@@ -10,17 +11,25 @@ namespace JPS
         //대각 이동 비용
         const int MOVE_DIAGONAL_COST = 14;
 
-        int mapSize;
+        Vector2Int mapSize;
         JPSNode startNode, endNode;
+
+        BitArray map;
         List<JPSNode> mapData = new List<JPSNode>();
         List<JPSNode> openNodes = new List<JPSNode>();
 
-        public void FindPath(List<JPSNode> mapData, JPSNode startNode, JPSNode endNode, int mapSize)
+        public void FindPath(BitArray map, JPSNode startNode, JPSNode endNode, Vector2Int mapSize)
         {
             Debug.DrawRay(new Vector3(startNode.pos.x,0, startNode.pos.y), Vector3.up, Color.white, 5);
             openNodes.Clear();
+
+
             this.mapSize = mapSize;
-            this.mapData = mapData;
+            this.map = map;
+            
+            this.mapData = new List<JPSNode>();
+            
+            
             startNode.gCost = 0;
             startNode.hCost = ManhattanHeuristic(startNode.pos, endNode.pos);
             this.endNode = endNode;
@@ -332,7 +341,7 @@ namespace JPS
 
                 #region 왼쪽이 막혀 있으면서 왼쪽 위가 막혀있지 않은 경우
 
-                if (y + 1 < mapSize && x > 0)
+                if (y + 1 < mapSize.y && x > 0)
                 {
                     if (GetNode(x - 1, y).moveAble == false) // 왼쪽이 막힘
                     {
@@ -349,7 +358,7 @@ namespace JPS
 
                 #region 아래가 막혀 있으면서 오른쪽 아래가 안막혔으면
 
-                if (y > 0 && x + 1 < mapSize)
+                if (y > 0 && x + 1 < mapSize.x)
                 {
                     if (GetNode(x, y - 1).moveAble == false) // 왼쪽이 벽이고
                     {
@@ -421,7 +430,7 @@ namespace JPS
 
                 #region 왼쪽이 막혀 있으면서 왼쪽 아래가 막혀있지 않은 경우
 
-                if (y + 1 < mapSize && x > 0)
+                if (y + 1 < mapSize.y && x > 0)
                 {
                     if (GetNode(x - 1, y).moveAble == false) // 왼쪽이 막힘
                     {
@@ -438,7 +447,7 @@ namespace JPS
 
                 #region 위가 막혀 있으면서 오른쪽 위가 안막혔으면
 
-                if (y > 0 && x + 1 < mapSize)
+                if (y > 0 && x + 1 < mapSize.x)
                 {
                     if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
                     {
@@ -511,7 +520,7 @@ namespace JPS
 
                 #region 오른쪽이 막혀 있으면서 오른쪽 아래가 막혀있지 않은 경우
 
-                if (y + 1 < mapSize && x > 0)
+                if (y + 1 < mapSize.y && x > 0)
                 {
                     if (GetNode(x + 1, y).moveAble == false) // 오른쪽이 막힘
                     {
@@ -528,7 +537,7 @@ namespace JPS
 
                 #region 위가 막혀 있으면서 왼쪽 위가 안막혔으면
 
-                if (y > 0 && x + 1 < mapSize)
+                if (y > 0 && x + 1 < mapSize.x)
                 {
                     if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
                     {
@@ -600,7 +609,7 @@ namespace JPS
 
                 #region 오른쪽이 막혀 있으면서 오른쪽 위가 막혀있지 않은 경우
 
-                if (y + 1 < mapSize && x > 0)
+                if (y + 1 < mapSize.y && x > 0)
                 {
                     if (GetNode(x + 1, y).moveAble == false) // 왼쪽이 막힘
                     {
@@ -617,7 +626,7 @@ namespace JPS
 
                 #region 아래가 막혀 있으면서 왼쪽 아래가 안막혔으면
 
-                if (y > 0 && x + 1 < mapSize)
+                if (y > 0 && x + 1 < mapSize.x)
                 {
                     if (GetNode(x, y - 1).moveAble == false) // 위가 벽이고
                     {
@@ -656,9 +665,9 @@ namespace JPS
 
         JPSNode GetNode(int _x, int _y)
         {
-            if (mapSize <= _x) return new JPSNode(_x, _y, false);
-            if (mapSize <= _y) return new JPSNode(_x, _y, false);
-            return mapData[_y * mapSize + _x];
+            if (mapSize.x <= _x) return new JPSNode(_x, _y, false);
+            if (mapSize.y <= _y) return new JPSNode(_x, _y, false);
+            return mapData[_y * mapSize.x + _x];
         }
 
         JPSNode GetLowetsFCost(List<JPSNode> _openList)
@@ -675,8 +684,8 @@ namespace JPS
         {
             if (_x <= 0) return false;
             if (_y <= 0) return false;
-            if (_x >= mapSize-1) return false;
-            if (_y >= mapSize-1) return false;
+            if (_x >= mapSize.x-1) return false;
+            if (_y >= mapSize.y-1) return false;
 
             return true;
         }

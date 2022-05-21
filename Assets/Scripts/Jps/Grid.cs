@@ -6,6 +6,7 @@ namespace JPS
 {
     public class Grid : MonoBehaviour
     {
+        public Vector2Int GridPos;
         [SerializeField] int gridCount;
         [SerializeField] int gridSize;
         [SerializeField] Vector3 gizmoSize;
@@ -14,6 +15,14 @@ namespace JPS
         [SerializeField] Transform startTr;
         [SerializeField] Transform endTr;
 
+        public Grid()
+        {
+
+        }
+        public Grid (Vector2Int pos)
+        {
+            GridPos = pos;
+        }
         // Update is called once per frame
         void Start()
         {
@@ -34,7 +43,7 @@ namespace JPS
 
                 var sn = nodes[p1.x + p1.y * gridCount];
                 var en = nodes[p2.x + p2.y * gridCount];
-                jps.FindPath(nodes, sn, en, gridCount);
+                //jps.FindPath(nodes, sn, en, new Vector2Int(gridCount, gridCount));
             }
         }
         public void InitializeGrid()

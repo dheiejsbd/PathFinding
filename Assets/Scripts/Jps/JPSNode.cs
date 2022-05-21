@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace JPS
 {
-    [System.Serializable]
     public class JPSNode
     {
         public Vector2Int pos;

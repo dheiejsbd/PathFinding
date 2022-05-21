@@ -132,7 +132,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 196328898}
-  - component: {fileID: 196328897}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -140,24 +139,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &196328897
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 196328896}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9ef880e638f90446a15b7ea5dbf0230, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gridCount: 50
-  gridSize: 1
-  gizmoSize: {x: 0.2, y: 0.2, z: 0.2}
-  nodes: []
-  startTr: {fileID: 330805590}
-  endTr: {fileID: 1315929709}
 --- !u!4 &196328898
 Transform:
   m_ObjectHideFlags: 0
@@ -556,7 +537,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1900229238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -569,7 +550,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9852c06252b8df64593d18dcf2dcdb03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grid: {fileID: 196328897}
   size: {x: 5, y: 5, z: 5}
 --- !u!4 &1900229239
 Transform:
