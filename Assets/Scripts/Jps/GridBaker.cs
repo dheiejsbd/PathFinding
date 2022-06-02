@@ -8,20 +8,26 @@ namespace JPS
     class GridBaker
     {
         List<Grid> grids = new List<Grid>();
-        List<JPSObstacle> obstacles = new List<JPSObstacle>();
 
         public BitArray[] layer;
+        LayerMask[] layerMasks;
 
         int layerCount;
         int gridCellCount;
+        float gridCellSize = 1;
 
-        public void Initialize(int _layerCount, int _gridCellCount)
+        public BitArray GetMap(GridLayer _layer)
+        {
+            return layer[(int)_layer];
+        }
+
+        public void Initialize(int _layerCount, int _gridCellCount, LayerMask[] _layerMasks = null)
         {
             layerCount = _layerCount;
+            layerMasks = _layerMasks;
             gridCellCount = _gridCellCount;
-
-            BakeAll();
         }
+
 
         public void AddGrid(Grid _grid)
         {
@@ -48,22 +54,48 @@ namespace JPS
         }
 
 
-
-
-
         void BakeAll()
         {
             layer = new BitArray[layerCount];
 
             BakePlane();
+            Bake(1);
         }
 
         void Bake(int _layerID)
         {
+            BitArray bit = new BitArray(BitCount(), true);
 
-            //장애물 관련 코드 필요
+            Vector2Int max = RightUpCorner();
+            Vector2Int min = LeftDownCorner();
+
+            int xChunkCount = (max.x - min.x + 1);
+            int yChunkCount = (max.y - min.y + 1);
+
+            Vector3 celloffset = new Vector3(gridCellSize / 2f, 0, gridCellSize / 2f);
+
+
+            for (int y = 0; y < yChunkCount * gridCellCount; y++)
+            {
+                for (int x = 0; x < xChunkCount * gridCellCount; x++)
+                {
+                    Vector3 chunkOffset = Vector3.zero;
+                    if (min.x < 0) chunkOffset.x = min.x * gridCellCount * gridCellSize;
+                    if (min.y < 0) chunkOffset.z = min.y * gridCellCount * gridCellSize;
+
+                    int bitID = y * xChunkCount * gridCellCount + x;
+                    bit.Set(bitID, !Physics.BoxCast(new Vector3(x * gridCellSize, -50, y * gridCellSize) + chunkOffset + celloffset,
+                                                                             celloffset,
+                                                                             Vector3.up,
+                                                                             Quaternion.identity, 
+                                                                             100, 
+                                                                             layerMasks[_layerID-1]));
+                }
+            }
+
+            layer[_layerID] = bit;
         }
-
+        //청크 해금 여부
         public void BakePlane()
         {
             BitArray array = new BitArray(BitCount(), false);
@@ -71,7 +103,7 @@ namespace JPS
             Vector2Int ru = RightUpCorner();
             Vector2Int ld = LeftDownCorner();
 
-            int XcellCount = (ru.x - ld.x+1) * gridCellCount;
+            int XcellCount = (ru.x - ld.x + 1) * gridCellCount;
 
             foreach (var item in grids)
             {
@@ -92,6 +124,7 @@ namespace JPS
             layer[0] = array;
         }
 
+        //가장 오른쪽 위 청크 좌표
         Vector2Int RightUpCorner()
         {
             Vector2Int Max = Vector2Int.zero;
@@ -104,6 +137,7 @@ namespace JPS
 
             return Max;
         }
+        //가장 왼쪽 아래 청크 좌표
         Vector2Int LeftDownCorner()
         {
             Vector2Int Min = Vector2Int.zero;
@@ -121,6 +155,28 @@ namespace JPS
             Vector2Int Max = Vector2Int.zero;
             Vector2Int Min = Vector2Int.zero;
 
+            foreach (var Chunk in grids)
+            {
+                Max.x = Mathf.Max(Chunk.GridPos.x, Max.x);
+                Max.y = Mathf.Max(Chunk.GridPos.y, Max.y);
+
+                Min.x = Mathf.Min(Chunk.GridPos.x, Min.x);
+                Min.y = Mathf.Min(Chunk.GridPos.y, Min.y);
+            }
+
+            int x, y;
+
+            x = (Max.x - Min.x) + 1;
+            y = (Max.y - Min.y) + 1;
+
+            return x * y * gridCellCount * gridCellCount;
+        }
+
+        int GetBitID(int _x, int _y)
+        {
+            Vector2Int Max = Vector2Int.zero;
+            Vector2Int Min = Vector2Int.zero;
+
             foreach (var item in grids)
             {
                 Max.x = Mathf.Max(item.GridPos.x, Max.x);
@@ -132,12 +188,9 @@ namespace JPS
 
             int x, y;
 
-            x = (Max.x - Min.x)+1;
-            y = (Max.y - Min.y)+1;
+            x = (Max.x - Min.x) + 1;
 
-            return x * y * gridCellCount * gridCellCount;
+            return x * gridCellCount * _y + _x;
         }
-
-
     }
 }

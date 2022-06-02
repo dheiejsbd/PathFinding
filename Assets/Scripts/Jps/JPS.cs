@@ -4,35 +4,76 @@ using System.Collections.Generic;
 using System.Collections;
 namespace JPS
 {
-    public class JPS
+    public class JPS : MonoBehaviour
     {
+        public static JPS instance;
+
         //직선 이동 비용
         const int MOVE_STRAIGHT_COST = 10;
         //대각 이동 비용
         const int MOVE_DIAGONAL_COST = 14;
 
         Vector2Int mapSize;
+        Vector2Int MaxChunkPos = Vector2Int.zero;
+        Vector2Int MinChunkPos = Vector2Int.zero;
+
         JPSNode startNode, endNode;
 
         BitArray map;
         List<JPSNode> mapData = new List<JPSNode>();
         List<JPSNode> openNodes = new List<JPSNode>();
 
-        public void FindPath(BitArray map, JPSNode startNode, JPSNode endNode, Vector2Int mapSize)
+
+        int gridCellCount;
+
+
+        GridBaker baker = new GridBaker();
+        [SerializeField] LayerMask[] gridLayer;
+
+
+        void Initialize()
+        {
+            if (instance = null) instance = this;
+
+            baker.Initialize(gridLayer.Length, gridCellCount, gridLayer);
+
+        }
+
+
+        #region Gridbaker
+        void AddGrid(Vector2Int _pos)
+        {
+            baker.AddGrid(new Grid(_pos));
+            MaxChunkPos.x = Mathf.Max(MaxChunkPos.x, _pos.x);
+            MaxChunkPos.y = Mathf.Max(MaxChunkPos.y, _pos.y);
+            MinChunkPos.x = Mathf.Min(MinChunkPos.x, _pos.x);
+            MinChunkPos.y = Mathf.Min(MinChunkPos.y, _pos.y);
+            mapSize.x = MaxChunkPos.x - MinChunkPos.x + 1;
+            mapSize.y = MaxChunkPos.y - MinChunkPos.y + 1;
+        }
+
+        void UpdateGrid(Vector2Int pos)
+        {
+
+        }
+        #endregion
+
+        #region PathFinding
+        public void FindPath(GridLayer _map, Vector2Int _startPos, Vector2Int _endPos)
         {
             Debug.DrawRay(new Vector3(startNode.pos.x,0, startNode.pos.y), Vector3.up, Color.white, 5);
             openNodes.Clear();
 
 
-            this.mapSize = mapSize;
-            this.map = map;
+            this.map = baker.GetMap(_map);
             
             this.mapData = new List<JPSNode>();
-            
-            
+
+            startNode = GetNode(_startPos.x, _startPos.y);
             startNode.gCost = 0;
             startNode.hCost = ManhattanHeuristic(startNode.pos, endNode.pos);
-            this.endNode = endNode;
+
+            this.endNode = GetNode(_endPos.x, _endPos.y);
             openNodes.Add(startNode);
 
             while (openNodes.Count > 0)
@@ -56,7 +97,7 @@ namespace JPS
                     return;
                 }
 
-                if(currentNode.moveAble == true)
+                if(CanMove(currentNode) == true)
                 {
                     Right(currentNode);
                     Left(currentNode);
@@ -90,7 +131,7 @@ namespace JPS
 
                 currentNode = GetNode(++x, y);
 
-                if (currentNode.moveAble == false) break;
+                if (CanMove(currentNode) == false) break;
 
                 if(currentNode == endNode)
                 {
@@ -113,7 +154,7 @@ namespace JPS
                     }
                 }
                 //오른쪽 위 대각 
-                if(GetNode(x, y + 1).moveAble == false)
+                if(CanMove(GetNode(x, y + 1)) == false)
                 {
                     if(GetNode(x+1, y + 1).moveAble == true)
                     {
@@ -146,7 +187,7 @@ namespace JPS
 
                 currentNode = GetNode(--x, y);
 
-                if (currentNode.moveAble == false) break;
+                if (CanMove(currentNode) == false) break;
 
                 if (currentNode == endNode)
                 {
@@ -203,7 +244,7 @@ namespace JPS
 
                 currentNode = GetNode(x, --y);
 
-                if (currentNode.moveAble == false) break;
+                if (CanMove(currentNode) == false) break;
 
                 if (currentNode == endNode)
                 {
@@ -253,14 +294,14 @@ namespace JPS
 
             bool isFind = false;
 
-            while (currentNode.moveAble == true)
+            while (CanMove(currentNode) == true)
             {
                 //map size comp
                 if (Comp(x, y+1) == false) break;
 
                 currentNode = GetNode(x, ++y);
 
-                if (currentNode.moveAble == false) break;
+                if (CanMove(currentNode) == false) break;
 
                 if (currentNode == endNode)
                 {
@@ -311,7 +352,7 @@ namespace JPS
             JPSNode currentNode = startNode;
 
 
-            while (currentNode.moveAble == true)
+            while (CanMove(currentNode) == true)
             {
                 currentNode.moveAble = false;
 
@@ -325,7 +366,7 @@ namespace JPS
 
                 currentNode = GetNode(++x, ++y); // 다음 노드로 이동
 
-                if (currentNode.moveAble == false)
+                if (CanMove(currentNode) == false)
                 {
                     break;
                 }
@@ -343,9 +384,9 @@ namespace JPS
 
                 if (y + 1 < mapSize.y && x > 0)
                 {
-                    if (GetNode(x - 1, y).moveAble == false) // 왼쪽이 막힘
+                    if (CanMove(GetNode(x - 1, y)) == false) // 왼쪽이 막힘
                     {
-                        if (GetNode(x - 1, y + 1).moveAble == true) // 왼쪽 위가 안막힘
+                        if (CanMove(GetNode(x - 1, y + 1)) == true) // 왼쪽 위가 안막힘
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -360,9 +401,9 @@ namespace JPS
 
                 if (y > 0 && x + 1 < mapSize.x)
                 {
-                    if (GetNode(x, y - 1).moveAble == false) // 왼쪽이 벽이고
+                    if (CanMove(GetNode(x, y - 1)) == false) // 왼쪽이 벽이고
                     {
-                        if (GetNode(x + 1, y - 1).moveAble == true) // 왼쪽 아래가 막혀 있지 않으면
+                        if (CanMove(GetNode(x + 1, y - 1)) == true) // 왼쪽 아래가 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -400,7 +441,7 @@ namespace JPS
             JPSNode currentNode = startNode;
 
 
-            while (currentNode.moveAble == true)
+            while (CanMove(currentNode) == true)
             {
                 currentNode.moveAble = false;
 
@@ -414,7 +455,7 @@ namespace JPS
 
                 currentNode = GetNode(++x, --y); // 다음 노드로 이동
 
-                if (currentNode.moveAble == false)
+                if (CanMove(currentNode) == false)
                 {
                     break;
                 }
@@ -490,7 +531,7 @@ namespace JPS
             JPSNode currentNode = startNode;
 
 
-            while (currentNode.moveAble == true)
+            while (CanMove(currentNode) == true)
             {
                 currentNode.moveAble = false;
 
@@ -504,7 +545,7 @@ namespace JPS
 
                 currentNode = GetNode(--x, --y); // 다음 노드로 이동
 
-                if (currentNode.moveAble == false)
+                if (CanMove(currentNode) == false)
                 {
                     break;
                 }
@@ -579,7 +620,7 @@ namespace JPS
             JPSNode currentNode = startNode;
 
 
-            while (currentNode.moveAble == true)
+            while (CanMove(currentNode) == true)
             {
                 currentNode.moveAble = false;
 
@@ -593,7 +634,7 @@ namespace JPS
 
                 currentNode = GetNode(--x, ++y); // 다음 노드로 이동
 
-                if (currentNode.moveAble == false)
+                if (CanMove(currentNode) == false)
                 {
                     break;
                 }
@@ -663,12 +704,27 @@ namespace JPS
 
         #endregion
 
+        bool CanMove(JPSNode _node)
+        {
+            return _node.moveAble && Getbit(_node.pos);
+        }
+
         JPSNode GetNode(int _x, int _y)
         {
             if (mapSize.x <= _x) return new JPSNode(_x, _y, false);
             if (mapSize.y <= _y) return new JPSNode(_x, _y, false);
             return mapData[_y * mapSize.x + _x];
         }
+        bool Getbit(Vector2Int _pos)
+        {
+            _pos -= MinChunkPos;
+            int ID = _pos.x + _pos.y * gridCellCount;
+            
+            
+            return map[ID];
+        }
+
+
 
         JPSNode GetLowetsFCost(List<JPSNode> _openList)
         {
@@ -718,5 +774,6 @@ namespace JPS
 
             return MOVE_DIAGONAL_COST * Mathf.Min(x, y) + MOVE_STRAIGHT_COST * reming;
         }
+        #endregion
     }
 }

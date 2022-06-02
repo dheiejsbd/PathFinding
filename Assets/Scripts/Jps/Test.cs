@@ -14,9 +14,10 @@ namespace JPS
 
         Vector2Int Max;
         Vector2Int Min;
+        public LayerMask[] layermask;
         private void Start()
         {
-            baker.Initialize(2, 50);
+            baker.Initialize(2, 50, layermask);
             baker.AddGrid(new Grid(new Vector2Int(0, 0)));
         }
 
@@ -45,7 +46,7 @@ namespace JPS
             if (tr.position.z < 0) pos.z -= 50;
             Gizmos.DrawWireCube(pos + new Vector3(25,0,25), new Vector3(50, 0, 50));
 
-            BitArray bit = baker.layer[0];
+            BitArray bit = baker?.layer[1];
             for (int y = 0; y < 50 * Ycount; y++)
             {
                 for (int x = 0; x < 50 * Xcount; x++)
