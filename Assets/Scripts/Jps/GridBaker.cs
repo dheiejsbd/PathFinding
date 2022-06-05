@@ -5,30 +5,25 @@ using UnityEngine;
 
 namespace JPS
 {
-    class GridBaker
+    public class GridBaker
     {
         List<Grid> grids = new List<Grid>();
 
         public BitArray[] layer;
         LayerMask[] layerMasks;
+        int layerCount => layerMasks.Length+1;
 
-        int layerCount;
         int gridCellCount;
         float gridCellSize = 1;
 
-        public BitArray GetMap(GridLayer _layer)
+        public void Initialize(int _gridCellCount, float _gridCellSize, LayerMask[] _layerMasks = null)
         {
-            return layer[(int)_layer];
-        }
-
-        public void Initialize(int _layerCount, int _gridCellCount, LayerMask[] _layerMasks = null)
-        {
-            layerCount = _layerCount;
             layerMasks = _layerMasks;
             gridCellCount = _gridCellCount;
+            gridCellSize = _gridCellSize;
         }
 
-
+        #region AddGrid
         public void AddGrid(Grid _grid)
         {
             grids.Add(_grid);
@@ -52,14 +47,20 @@ namespace JPS
             }
             BakeAll();
         }
+        #endregion
 
-
+        #region Bake
         void BakeAll()
         {
             layer = new BitArray[layerCount];
 
             BakePlane();
-            Bake(1);
+
+
+            for (int i = 0; i < layerMasks.Length; i++)
+            {
+                Bake(i);
+            }
         }
 
         void Bake(int _layerID)
@@ -87,17 +88,18 @@ namespace JPS
                     bit.Set(bitID, !Physics.BoxCast(new Vector3(x * gridCellSize, -50, y * gridCellSize) + chunkOffset + celloffset,
                                                                              celloffset,
                                                                              Vector3.up,
-                                                                             Quaternion.identity, 
-                                                                             100, 
-                                                                             layerMasks[_layerID-1]));
+                                                                             Quaternion.identity,
+                                                                             100,
+                                                                             layerMasks[_layerID]));
                 }
             }
 
-            layer[_layerID] = bit;
+            layer[_layerID+1] = bit;
         }
         //청크 해금 여부
         public void BakePlane()
         {
+            Debug.Log(BitCount());
             BitArray array = new BitArray(BitCount(), false);
 
             Vector2Int ru = RightUpCorner();
@@ -114,7 +116,6 @@ namespace JPS
 
                     for (int bitX = 0; bitX < gridCellCount; bitX++)
                     {
-
                         array.Set(bitOffset + bitX, true);
                     }
                 }
@@ -123,7 +124,9 @@ namespace JPS
 
             layer[0] = array;
         }
+        #endregion
 
+        #region helper
         //가장 오른쪽 위 청크 좌표
         Vector2Int RightUpCorner()
         {
@@ -192,5 +195,25 @@ namespace JPS
 
             return x * gridCellCount * _y + _x;
         }
+        #endregion
+
+
+        public BitArray GetMap(GridLayer _layer)
+        {
+            BitArray bit = (BitArray)layer[0].Clone();
+            int i = 1;
+            foreach (var item in (GridLayer[])Enum.GetValues(typeof(GridLayer)))
+            {
+                if((item & _layer) == item)
+                {
+                    bit.And(layer[i]);
+                }
+                i ++;
+            }
+
+            return bit;
+        }
+
+
     }
 }

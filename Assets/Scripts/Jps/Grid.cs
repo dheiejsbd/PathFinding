@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace JPS
 {
-    public class Grid : MonoBehaviour
+    public class Grid
     {
         public Vector2Int GridPos;
         [SerializeField] int gridCount;
@@ -15,10 +15,6 @@ namespace JPS
         [SerializeField] Transform startTr;
         [SerializeField] Transform endTr;
 
-        public Grid()
-        {
-
-        }
         public Grid (Vector2Int pos)
         {
             GridPos = pos;

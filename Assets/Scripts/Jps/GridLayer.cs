@@ -8,7 +8,6 @@ namespace JPS
 {
     public enum GridLayer: uint
     {
-        Chunk           = 0x00000000,
         Terrain         = 0x00000001,
         ObjLevel1       = 0x00000002,
         ObjLevel2       = 0x00000004,

@@ -6,6 +6,22 @@ namespace JPS
 {
     public class JPS : MonoBehaviour
     {
+        [MenuItem("GameObject/Custom GameObject/JPS", false)]
+        static void CreateJPS(MenuCommand menuCommand)
+        {
+            if (Object.FindObjectOfType<JPS>() != null) return;
+            GameObject go = new GameObject("JPS");
+            go.AddComponent(typeof(JPS));
+            // Hierachy 윈도우에서 어떤 오브젝트를 선택하여 생성시에는 그 오브젝트의 하위 계층으로 생성
+            GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
+
+            // 생성된 오브젝트를 Undo 시스템에 등록
+            Undo.RegisterCreatedObjectUndo(go, "Create " + go.name);
+
+            // 생성한 오브젝트를 선택
+            Selection.activeObject = go;
+        }
+
         public static JPS instance;
 
         //직선 이동 비용
@@ -20,28 +36,36 @@ namespace JPS
         JPSNode startNode, endNode;
 
         BitArray map;
-        List<JPSNode> mapData = new List<JPSNode>();
+        List<JPSNode> nodes = new List<JPSNode>();
         List<JPSNode> openNodes = new List<JPSNode>();
 
 
-        int gridCellCount;
+        public GridBaker baker = new GridBaker();
 
 
-        GridBaker baker = new GridBaker();
-        [SerializeField] LayerMask[] gridLayer;
+        [SerializeField]int gridCellCount = 50;
+        [SerializeField]int gridCellSize = 1;
+        [SerializeField] LayerMask[] gridLayer = new LayerMask[((GridLayer[])System.Enum.GetValues(typeof(GridLayer))).Length];
 
 
-        void Initialize()
+        void Awake()
         {
-            if (instance = null) instance = this;
-
-            baker.Initialize(gridLayer.Length, gridCellCount, gridLayer);
-
+            if (instance != null)
+            {
+                Destroy(this);
+                return;
+            }
+            instance = this;
+            baker.Initialize(gridCellCount, gridCellSize, gridLayer);
         }
 
 
         #region Gridbaker
-        void AddGrid(Vector2Int _pos)
+        public void AddGrid(Vector3 _pos)
+        {
+            AddGrid(GridLocalization(_pos));
+        }
+        public void AddGrid(Vector2Int _pos)
         {
             baker.AddGrid(new Grid(_pos));
             MaxChunkPos.x = Mathf.Max(MaxChunkPos.x, _pos.x);
@@ -51,29 +75,35 @@ namespace JPS
             mapSize.x = MaxChunkPos.x - MinChunkPos.x + 1;
             mapSize.y = MaxChunkPos.y - MinChunkPos.y + 1;
         }
-
-        void UpdateGrid(Vector2Int pos)
-        {
-
-        }
         #endregion
 
+
         #region PathFinding
-        public void FindPath(GridLayer _map, Vector2Int _startPos, Vector2Int _endPos)
+        public void FindPath(GridLayer _mapLayer, Vector3 _startPos, Vector3 _endPos)
         {
-            Debug.DrawRay(new Vector3(startNode.pos.x,0, startNode.pos.y), Vector3.up, Color.white, 5);
+            var s = CellLocalization(_startPos);
+            var e = CellLocalization(_endPos);
+
+            FindPath(_mapLayer, s, e);
+        }
+        public void FindPath(GridLayer _mapLayer, Vector2Int _startPos, Vector2Int _endPos)
+        {
             openNodes.Clear();
 
 
-            this.map = baker.GetMap(_map);
+            this.map = baker.GetMap(_mapLayer);
             
-            this.mapData = new List<JPSNode>();
+            InitializeGrid();
 
             startNode = GetNode(_startPos.x, _startPos.y);
+            endNode = GetNode(_endPos.x, _endPos.y);
+
             startNode.gCost = 0;
             startNode.hCost = ManhattanHeuristic(startNode.pos, endNode.pos);
 
-            this.endNode = GetNode(_endPos.x, _endPos.y);
+            Debug.DrawRay(new Vector3(startNode.pos.x,0, startNode.pos.y), Vector3.up, Color.white, 5);
+            Debug.DrawRay(new Vector3(endNode.pos.x,0, endNode.pos.y), Vector3.up, Color.white, 5);
+
             openNodes.Add(startNode);
 
             while (openNodes.Count > 0)
@@ -113,6 +143,43 @@ namespace JPS
             }
         }
 
+        void InitializeGrid()
+        {
+            this.nodes = new List<JPSNode>();
+
+            for (int y = MinChunkPos.y * gridCellCount; y < (MaxChunkPos.y+ 1) * gridCellCount; y++)
+            {
+                for (int x = MinChunkPos.x * gridCellCount; x < (MaxChunkPos.x+1) * gridCellCount; x++)
+                {
+                    nodes.Add(new JPSNode(x, y, true));
+                }
+            }
+        }
+        Vector2Int GridLocalization(Vector3 _origin)
+        {
+            var localization = _origin;
+
+            localization.x /= gridCellSize * gridCellCount;
+            localization.z /= gridCellSize * gridCellCount;
+
+            if (_origin.x < 0) localization.x -= 1;
+            if (_origin.z < 0) localization.z -= 1;
+
+            return new Vector2Int((int)localization.x, (int)localization.z);
+        }
+        Vector2Int CellLocalization(Vector3 _origin)
+        {
+            var localization = _origin;
+            localization.x /= gridCellSize;
+            localization.z /= gridCellSize;
+
+            if (_origin.x < 0) localization.x -= 1;
+            if (_origin.z < 0) localization.y -= 1;
+
+            return new Vector2Int((int)localization.x, (int)localization.z);
+        }
+        
+
         #region Move
         bool Right(JPSNode _startNode, bool _moveAble = false)
         {
@@ -141,9 +208,9 @@ namespace JPS
                 }
 
                 //오른쪽 아래 대각
-                if(GetNode(x, y - 1).moveAble == false)
+                if(CanMove(GetNode(x, y - 1)) == false)
                 {
-                    if(GetNode(x+1, y-1).moveAble == true)
+                    if(CanMove(GetNode(x+1, y-1)) == true)
                     {
                         if(_moveAble == false)
                         {
@@ -156,7 +223,7 @@ namespace JPS
                 //오른쪽 위 대각 
                 if(CanMove(GetNode(x, y + 1)) == false)
                 {
-                    if(GetNode(x+1, y + 1).moveAble == true)
+                    if(CanMove(GetNode(x+1, y + 1)) == true)
                     {
                         if(_moveAble == false)
                         {
@@ -198,9 +265,9 @@ namespace JPS
                 }
 
                 //왼쪽 위 대각 
-                if (GetNode(x, y + 1).moveAble == false)
+                if (CanMove(GetNode(x, y + 1)) == false)
                 {
-                    if (GetNode(x -1, y + 1).moveAble == true)
+                    if (CanMove(GetNode(x -1, y + 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -211,9 +278,9 @@ namespace JPS
                     }
                 }
                 //왼쪽 아래 대각
-                if (GetNode(x, y - 1).moveAble == false)
+                if (CanMove(GetNode(x, y - 1)) == false)
                 {
-                    if (GetNode(x + 1, y - 1).moveAble == true)
+                    if (CanMove(GetNode(x + 1, y - 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -255,9 +322,9 @@ namespace JPS
                 }
 
                 //오른쪽 아래 대각
-                if (GetNode(x+1, y).moveAble == false)
+                if (CanMove(GetNode(x+1, y)) == false)
                 {
-                    if (GetNode(x + 1, y-1).moveAble == true)
+                    if (CanMove(GetNode(x + 1, y-1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -268,9 +335,9 @@ namespace JPS
                     }
                 }
                 //왼쪽 아래 대각 
-                if (GetNode(x -1 , y).moveAble == false)
+                if (CanMove(GetNode(x -1 , y)) == false)
                 {
-                    if (GetNode(x - 1, y - 1).moveAble == true)
+                    if (CanMove(GetNode(x - 1, y - 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -311,9 +378,9 @@ namespace JPS
                 }
 
                 //오른쪽 위 대각
-                if (GetNode(x + 1, y).moveAble == false)
+                if (CanMove(GetNode(x + 1, y)) == false)
                 {
-                    if (GetNode(x + 1, y + 1).moveAble == true)
+                    if (CanMove(GetNode(x + 1, y + 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -324,9 +391,9 @@ namespace JPS
                     }
                 }
                 //왼쪽 위 대각 
-                if (GetNode(x - 1, y).moveAble == false)
+                if (CanMove(GetNode(x - 1, y)) == false)
                 {
-                    if (GetNode(x - 1, y + 1).moveAble == true)
+                    if (CanMove(GetNode(x - 1, y + 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -473,9 +540,9 @@ namespace JPS
 
                 if (y + 1 < mapSize.y && x > 0)
                 {
-                    if (GetNode(x - 1, y).moveAble == false) // 왼쪽이 막힘
+                    if (CanMove(GetNode(x - 1, y)) == false) // 왼쪽이 막힘
                     {
-                        if (GetNode(x - 1, y - 1).moveAble == true) // 왼쪽 아래가 안막힘
+                        if (CanMove(GetNode(x - 1, y - 1)) == true) // 왼쪽 아래가 안막힘
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -490,9 +557,9 @@ namespace JPS
 
                 if (y > 0 && x + 1 < mapSize.x)
                 {
-                    if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
+                    if (CanMove(GetNode(x, y + 1)) == false) // 위가 벽이고
                     {
-                        if (GetNode(x + 1, y - 1).moveAble == true) // 오른쪽 위 막혀 있지 않으면
+                        if (CanMove(GetNode(x + 1, y - 1)) == true) // 오른쪽 위 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -563,9 +630,9 @@ namespace JPS
 
                 if (y + 1 < mapSize.y && x > 0)
                 {
-                    if (GetNode(x + 1, y).moveAble == false) // 오른쪽이 막힘
+                    if (CanMove(GetNode(x + 1, y)) == false) // 오른쪽이 막힘
                     {
-                        if (GetNode(x + 1, y - 1).moveAble == true) // 오른쪽 아래가 안막힘
+                        if (CanMove(GetNode(x + 1, y - 1)) == true) // 오른쪽 아래가 안막힘
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -580,9 +647,9 @@ namespace JPS
 
                 if (y > 0 && x + 1 < mapSize.x)
                 {
-                    if (GetNode(x, y + 1).moveAble == false) // 위가 벽이고
+                    if (CanMove(GetNode(x, y + 1)) == false) // 위가 벽이고
                     {
-                        if (GetNode(x - 1, y + 1).moveAble == true) // 왼쪽 위 막혀 있지 않으면
+                        if (CanMove(GetNode(x - 1, y + 1)) == true) // 왼쪽 위 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -652,9 +719,9 @@ namespace JPS
 
                 if (y + 1 < mapSize.y && x > 0)
                 {
-                    if (GetNode(x + 1, y).moveAble == false) // 왼쪽이 막힘
+                    if (CanMove(GetNode(x + 1, y)) == false) // 왼쪽이 막힘
                     {
-                        if (GetNode(x + 1, y + 1).moveAble == true) // 왼쪽 아래가 안막힘
+                        if (CanMove(GetNode(x + 1, y + 1)) == true) // 왼쪽 아래가 안막힘
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -669,9 +736,9 @@ namespace JPS
 
                 if (y > 0 && x + 1 < mapSize.x)
                 {
-                    if (GetNode(x, y - 1).moveAble == false) // 위가 벽이고
+                    if (CanMove(GetNode(x, y - 1)) == false) // 위가 벽이고
                     {
-                        if (GetNode(x - 1, y - 1).moveAble == true) // 오른쪽 위 막혀 있지 않으면
+                        if (CanMove(GetNode(x - 1, y - 1)) == true) // 오른쪽 위 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -711,14 +778,16 @@ namespace JPS
 
         JPSNode GetNode(int _x, int _y)
         {
-            if (mapSize.x <= _x) return new JPSNode(_x, _y, false);
-            if (mapSize.y <= _y) return new JPSNode(_x, _y, false);
-            return mapData[_y * mapSize.x + _x];
+            _x -= MinChunkPos.x * gridCellCount;
+            _y -= MinChunkPos.y * gridCellCount;
+            if (mapSize.x * gridCellCount <= _x) return new JPSNode(_x, _y, false);
+            if (mapSize.y * gridCellCount <= _y) return new JPSNode(_x, _y, false);
+            return nodes[_y * mapSize.x * gridCellCount + _x];
         }
         bool Getbit(Vector2Int _pos)
         {
-            _pos -= MinChunkPos;
-            int ID = _pos.x + _pos.y * gridCellCount;
+            _pos -= MinChunkPos * gridCellCount;
+            int ID = _pos.x + _pos.y * gridCellCount*mapSize.x;
             
             
             return map[ID];
@@ -738,16 +807,15 @@ namespace JPS
 
         bool Comp(int _x, int _y)
         {
-            if (_x <= 0) return false;
-            if (_y <= 0) return false;
-            if (_x >= mapSize.x-1) return false;
-            if (_y >= mapSize.y-1) return false;
+            if (_x <= MinChunkPos.x * gridCellCount) return false;
+            if (_y <= MinChunkPos.y * gridCellCount) return false;
+            if (_x >= (MaxChunkPos.x+1) * gridCellCount) return false;
+            if (_y >= (MaxChunkPos.y+1) * gridCellCount) return false;
 
             return true;
         }
         void AddOpenList(JPSNode _currentNode, JPSNode _parentNode)
         {
-            Debug.LogWarning("openlist" + _currentNode.pos);
             int nextCost = _parentNode.gCost + ManhattanHeuristic(_parentNode.pos, _currentNode.pos);
             if (nextCost < _currentNode.gCost)
             {
@@ -775,5 +843,7 @@ namespace JPS
             return MOVE_DIAGONAL_COST * Mathf.Min(x, y) + MOVE_STRAIGHT_COST * reming;
         }
         #endregion
+
+
     }
 }
