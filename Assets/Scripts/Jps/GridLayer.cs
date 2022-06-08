@@ -6,15 +6,16 @@ using System.Threading.Tasks;
 
 namespace JPS
 {
-    public enum GridLayer: uint
+    [System.Flags]
+    public enum GridLayer: byte
     {
-        Terrain         = 0x00000001,
-        ObjLevel1       = 0x00000002,
-        ObjLevel2       = 0x00000004,
-        ObjLevel3       = 0x00000008,
-        ObjLevel4       = 0x00000010,
-        ObjLevel5       = 0x00000020,
-        Building        = 0x00000040,
-        MovingObs       = 0x00000080,
+        Terrain         = 1<<0,
+        ObjLevel1       = 1<<1,
+        ObjLevel2       = 1<<2,
+        ObjLevel3       = 1<<3,
+        ObjLevel4       = 1<<4,
+        ObjLevel5       = 1<<5,
+        Building        = 1<<6,
+        MovingObs       = 1<<7,
     }
 }

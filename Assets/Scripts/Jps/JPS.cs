@@ -6,7 +6,8 @@ namespace JPS
 {
     public class JPS : MonoBehaviour
     {
-        [MenuItem("GameObject/Custom GameObject/JPS", false)]
+        #if UNITY_EDITOR
+        [MenuItem("GameObject/Custom GameObject/JPS", false, int.MaxValue)]
         static void CreateJPS(MenuCommand menuCommand)
         {
             if (Object.FindObjectOfType<JPS>() != null) return;
@@ -21,7 +22,7 @@ namespace JPS
             // 생성한 오브젝트를 선택
             Selection.activeObject = go;
         }
-
+        #endif
         public static JPS instance;
 
         //직선 이동 비용
@@ -79,14 +80,14 @@ namespace JPS
 
 
         #region PathFinding
-        public void FindPath(GridLayer _mapLayer, Vector3 _startPos, Vector3 _endPos)
+        public Vector3[] FindPath(GridLayer _mapLayer, Vector3 _startPos, Vector3 _endPos)
         {
             var s = CellLocalization(_startPos);
             var e = CellLocalization(_endPos);
 
-            FindPath(_mapLayer, s, e);
+            return FindPath(_mapLayer, s, e);
         }
-        public void FindPath(GridLayer _mapLayer, Vector2Int _startPos, Vector2Int _endPos)
+        public Vector3[] FindPath(GridLayer _mapLayer, Vector2Int _startPos, Vector2Int _endPos)
         {
             openNodes.Clear();
 
@@ -116,15 +117,16 @@ namespace JPS
                     Debug.Log("FindPath");
 
                     JPSNode node = endNode;
+                    List<Vector3> path = new List<Vector3>();
                     while (true)
                     {
+                        path.Insert(0,node.pos.ToVector3());
                         if (node.parentNode == null) break;
                         var p1 = new Vector3(node.pos.x,0, node.pos.y);
                         node = node.parentNode;
                         var p2 = new Vector3(node.pos.x,0, node.pos.y);
-                        Debug.DrawLine(p1, p2, Color.yellow, 100);
                     }
-                    return;
+                    return path.ToArray();
                 }
 
                 if(CanMove(currentNode) == true)
@@ -141,6 +143,7 @@ namespace JPS
 
                 currentNode.moveAble = false;
             }
+            return null;
         }
 
         void InitializeGrid()
