@@ -283,7 +283,7 @@ namespace JPS
                 //왼쪽 아래 대각
                 if (CanMove(GetNode(x, y - 1)) == false)
                 {
-                    if (CanMove(GetNode(x + 1, y - 1)) == true)
+                    if (CanMove(GetNode(x - 1, y - 1)) == true)
                     {
                         if (_moveAble == false)
                         {
@@ -562,7 +562,7 @@ namespace JPS
                 {
                     if (CanMove(GetNode(x, y + 1)) == false) // 위가 벽이고
                     {
-                        if (CanMove(GetNode(x + 1, y - 1)) == true) // 오른쪽 위 막혀 있지 않으면
+                        if (CanMove(GetNode(x + 1, y + 1)) == true) // 오른쪽 위 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -722,9 +722,9 @@ namespace JPS
 
                 if (y + 1 < mapSize.y && x > 0)
                 {
-                    if (CanMove(GetNode(x + 1, y)) == false) // 왼쪽이 막힘
+                    if (CanMove(GetNode(x + 1, y)) == false) // 오른쪽이 막힘
                     {
-                        if (CanMove(GetNode(x + 1, y + 1)) == true) // 왼쪽 아래가 안막힘
+                        if (CanMove(GetNode(x + 1, y + 1)) == true) // 오른쪽 위가 안막힘
                         {
                             AddOpenList(currentNode, startNode);
 
@@ -739,9 +739,9 @@ namespace JPS
 
                 if (y > 0 && x + 1 < mapSize.x)
                 {
-                    if (CanMove(GetNode(x, y - 1)) == false) // 위가 벽이고
+                    if (CanMove(GetNode(x, y - 1)) == false) // 아래가 벽이고
                     {
-                        if (CanMove(GetNode(x - 1, y - 1)) == true) // 오른쪽 위 막혀 있지 않으면
+                        if (CanMove(GetNode(x - 1, y - 1)) == true) // 왼쪽 아래가 막혀 있지 않으면
                         {
                             AddOpenList(currentNode, startNode);
 
