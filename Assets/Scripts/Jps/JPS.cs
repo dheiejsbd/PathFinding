@@ -440,6 +440,7 @@ namespace JPS
                     break;
                 }
 
+                if (!CanMove(GetNode(x + 1, y)) && !CanMove(GetNode(x, y + 1))) break;
 
 
                 currentNode = GetNode(++x, ++y); // 다음 노드로 이동
@@ -523,6 +524,7 @@ namespace JPS
                     break;
                 }
 
+                if (!CanMove(GetNode(x + 1, y)) && !CanMove(GetNode(x, y - 1))) break;
 
 
                 currentNode = GetNode(++x, --y); // 다음 노드로 이동
@@ -607,6 +609,7 @@ namespace JPS
                     break;
                 }
 
+                if (!CanMove(GetNode(x - 1, y)) && !CanMove(GetNode(x, y - 1))) break;
 
 
                 currentNode = GetNode(--x, --y); // 다음 노드로 이동
@@ -689,7 +692,7 @@ namespace JPS
                     break;
                 }
 
-
+                if (!CanMove(GetNode(x - 1, y)) && !CanMove(GetNode(x, y + 1))) break;
 
                 currentNode = GetNode(--x, ++y); // 다음 노드로 이동
 
