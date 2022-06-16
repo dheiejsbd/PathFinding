@@ -36,16 +36,6 @@ namespace JPS
                 Xcount = Max.x - Min.x + 1;
                 Ycount = Max.y - Min.y + 1;
             }
-            if(Input.GetKeyDown(KeyCode.A))
-            {
-                GridLayer[] layer = (GridLayer[])Enum.GetValues(typeof(GridLayer));
-                GridLayer l = layer[0];
-                for (int i = 0; i < layer.Length; i++)
-                {
-                    l = l | layer[i];
-                }
-                JPS.instance.FindPath(l, target[0].position, target[1].position);
-            }
         }
 
         public void OnDrawGizmos()

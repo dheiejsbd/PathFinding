@@ -7,42 +7,18 @@ namespace JPS
 
     public class PathFinder : MonoBehaviour
     {
-        enum Shape
-        {
-            Box,
-            Circle
-        }
-        [SerializeField] Shape shape;
-        #region Speed
-        [SerializeField] float speed = 3.5f;
-        [SerializeField] float angularSpeed = 120;
-        [SerializeField] float acceleration = 8;//가속도
-        [SerializeField] float stopDistance = 0;
-        [SerializeField] bool autoBraking = true;
+        [SerializeField] float stopDistance = 0.5f;
         [SerializeField] [EnumFlags] GridLayer gridLayer;
-        #endregion
-        #region Box
-        Vector2 boxSize;
-        #endregion
-        #region Circle
-        float circleRadius;
-        #endregion
 
         public Transform target;
         Vector3 targetPos;
         Vector3[] path;
         int pathIndex;
-        void Awake()
-        {
-
-        }
 
         private void Update()
         {
-
-            if (pathIndex == path.Length) return;
-            Move();
-            Rotate();
+            if (path == null) return;
+            if (pathIndex >= path.Length) return;
             pathChack();
         }
         private void FixedUpdate()
@@ -50,6 +26,7 @@ namespace JPS
             if (target == null || target.position == targetPos) return;
             targetPos = target.position;
             path = JPS.instance.FindPath(gridLayer, transform.position, targetPos);
+            if (path == null) pathIndex = int.MaxValue;
             pathIndex = 0;
         }
 
@@ -60,25 +37,62 @@ namespace JPS
                 pathIndex++;
                 if (pathIndex == path.Length)
                 {
-                    //도착처리
+                    Debug.Log("JPS - " + gameObject + " : reach the target");
                 }
             }
 
         }
-        void Move()
+        public Vector3 MoveVector()
         {
-            transform.Translate(Vector3.forward * speed * Time.deltaTime);
-            //transform.position = 
+            return (path[pathIndex] - transform.position).normalized;
         }
-        void Rotate()
+
+        //circle 래스터화
+        void drawCircle(int r)
         {
-            transform.LookAt(path[pathIndex]);
-            //transform.rotation = Quaternion.Lerp(transform.rotation, );
+            List<Vector2Int> arr = new List<Vector2Int>();
+            int x, y;
+            int p;
+
+            x = 0;
+            y = r;
+            p = 1 - r;
+
+            arr.Add(new Vector2Int(y,x));
+            arr.Add(new Vector2Int(-y,x));
+            arr.Add(new Vector2Int(x,y));
+            arr.Add(new Vector2Int(x,-y));
+
+            ++x;
+            while (x < y)
+            {
+                if (p < 0)
+                {
+                    p += x + x + 1;
+                }
+                else
+                {
+                    p += x + x - y - y + 1;
+                    --y;
+                }
+                arr.Add(new Vector2Int(y, x));
+                arr.Add(new Vector2Int(-y, x));
+                arr.Add(new Vector2Int(y, -x));
+                arr.Add(new Vector2Int(-y, -x));
+                arr.Add(new Vector2Int(x, y));
+                arr.Add(new Vector2Int(-x, y));
+                arr.Add(new Vector2Int(x, -y));
+                arr.Add(new Vector2Int(-x, -y));
+                ++x;
+            }
+
         }
 
         private void OnDrawGizmos()
         {
+            if (path == null) return;
             Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(path[0], transform.position);
             for (int i = 1; i < path.Length; i++)
             {
                 Gizmos.DrawLine(path[i], path[i - 1]);

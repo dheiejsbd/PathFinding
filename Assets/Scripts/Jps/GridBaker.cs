@@ -7,12 +7,13 @@ namespace JPS
 {
     public class GridBaker
     {
-        List<Grid> grids = new List<Grid>();
+        List<Vector2Int> grids = new List<Vector2Int>();
 
         public BitArray[] layer;
         LayerMask[] layerMasks;
         int layerCount => layerMasks.Length+1;
 
+        public int[] HPmap;
         int gridCellCount;
         float gridCellSize = 1;
 
@@ -24,26 +25,16 @@ namespace JPS
         }
 
         #region AddGrid
-        public void AddGrid(Grid _grid)
-        {
-            grids.Add(_grid);
-            BakeAll();
-        }
-        public void AddGrids(Grid[] _grids)
-        {
-            grids.AddRange(_grids);
-            BakeAll();
-        }
         public void AddGrid(Vector2Int pos)
         {
-            grids.Add(new Grid(pos));
+            grids.Add(pos);
             BakeAll();
         }
         public void AddGrid(Vector2Int[] pos)
         {
             for (int i = 0; i < pos.Length; i++)
             {
-                grids.Add(new Grid(pos[i]));
+                grids.Add(pos[i]);
             }
             BakeAll();
         }
@@ -53,7 +44,7 @@ namespace JPS
         void BakeAll()
         {
             layer = new BitArray[layerCount];
-
+            HPmap = new int[BitCount()];
             BakePlane();
 
 
@@ -109,10 +100,10 @@ namespace JPS
 
             foreach (var item in grids)
             {
-                int x = (item.GridPos.x - ld.x) * gridCellCount;
+                int x = (item.x - ld.x) * gridCellCount;
                 for (int bity = 0; bity < gridCellCount; bity++)
                 {
-                    int bitOffset = XcellCount * ((item.GridPos.y - ld.y) * gridCellCount + bity) + x;
+                    int bitOffset = XcellCount * ((item.y - ld.y) * gridCellCount + bity) + x;
 
                     for (int bitX = 0; bitX < gridCellCount; bitX++)
                     {
@@ -134,8 +125,8 @@ namespace JPS
 
             foreach (var item in grids)
             {
-                Max.x = Mathf.Max(item.GridPos.x, Max.x);
-                Max.y = Mathf.Max(item.GridPos.y, Max.y);
+                Max.x = Mathf.Max(item.x, Max.x);
+                Max.y = Mathf.Max(item.y, Max.y);
             }
 
             return Max;
@@ -147,8 +138,8 @@ namespace JPS
 
             foreach (var item in grids)
             {
-                Min.x = Mathf.Min(item.GridPos.x, Min.x);
-                Min.y = Mathf.Min(item.GridPos.y, Min.y);
+                Min.x = Mathf.Min(item.x, Min.x);
+                Min.y = Mathf.Min(item.y, Min.y);
             }
             return Min;
         }
@@ -160,11 +151,11 @@ namespace JPS
 
             foreach (var Chunk in grids)
             {
-                Max.x = Mathf.Max(Chunk.GridPos.x, Max.x);
-                Max.y = Mathf.Max(Chunk.GridPos.y, Max.y);
+                Max.x = Mathf.Max(Chunk.x, Max.x);
+                Max.y = Mathf.Max(Chunk.y, Max.y);
 
-                Min.x = Mathf.Min(Chunk.GridPos.x, Min.x);
-                Min.y = Mathf.Min(Chunk.GridPos.y, Min.y);
+                Min.x = Mathf.Min(Chunk.x, Min.x);
+                Min.y = Mathf.Min(Chunk.y, Min.y);
             }
 
             int x, y;
@@ -182,11 +173,11 @@ namespace JPS
 
             foreach (var item in grids)
             {
-                Max.x = Mathf.Max(item.GridPos.x, Max.x);
-                Max.y = Mathf.Max(item.GridPos.y, Max.y);
+                Max.x = Mathf.Max(item.x, Max.x);
+                Max.y = Mathf.Max(item.y, Max.y);
 
-                Min.x = Mathf.Min(item.GridPos.x, Min.x);
-                Min.y = Mathf.Min(item.GridPos.y, Min.y);
+                Min.x = Mathf.Min(item.x, Min.x);
+                Min.y = Mathf.Min(item.y, Min.y);
             }
 
             int x, y;
@@ -200,6 +191,13 @@ namespace JPS
 
         public BitArray GetMap(GridLayer _layer)
         {
+            if (layer == null)
+            {
+                Debug.LogErrorFormat("{0} is Not Initialize pleas Initialize First", this);
+                return null;
+            }
+
+
             BitArray bit = (BitArray)layer[0].Clone();
             int i = 1;
             foreach (var item in (GridLayer[])Enum.GetValues(typeof(GridLayer)))
